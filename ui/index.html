@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Database IDE · Connections</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div><p class="eyebrow">DATABASE IDE</p><h1>Connections</h1></div>
+      <button id="new-connection" class="primary">New connection</button>
+    </header>
+    <section class="workspace" aria-label="Connection management">
+      <aside class="connection-panel"><div class="panel-heading"><span>Saved connections</span><span id="connection-count" class="count">0</span></div><div id="connection-list" class="connection-list"></div></aside>
+      <section class="editor-panel"><div id="empty-state" class="empty-state"><span class="empty-mark">+</span><h2>Connect to a database</h2><p>Create a saved PostgreSQL connection to get started.</p><button class="primary" id="empty-new">New connection</button></div>
+        <form id="connection-form" hidden>
+          <div class="editor-heading"><div><p class="eyebrow" id="form-kicker">NEW CONNECTION</p><h2 id="form-title">Connection details</h2></div><span id="status" role="status"></span></div>
+          <div class="form-grid"><label>Name<input name="name" required autocomplete="off"></label><label>Environment<select name="environment"><option>LOCAL</option><option>UAT</option><option>PRODUCTION</option></select></label><label>Host<input name="host" required autocomplete="off"></label><label>Port<input name="port" type="number" min="1" max="65535" value="5432" required></label><label>Database<input name="database" required autocomplete="off"></label><label>Username<input name="username" required autocomplete="username"></label><label class="wide">Password<input name="password" type="password" autocomplete="new-password"><small>Stored securely by the backend. It is never saved in this UI.</small></label><label class="toggle wide"><input name="read_only" type="checkbox"><span>Open as read-only</span></label></div>
+          <div class="form-actions"><button type="button" id="delete-connection" class="danger" hidden>Delete</button><span></span><button type="button" id="test-connection" class="secondary">Test connection</button><button class="primary" type="submit">Save connection</button></div>
+        </form>
+      </section>
+    </section>
+  </main>
+  <script src="./app.js"></script>
+</body>
+</html>
