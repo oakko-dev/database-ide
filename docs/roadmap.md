@@ -14,6 +14,7 @@
 - [x] Safe error messages and no password logging.
 - [x] Durable non-secret connection metadata storage.
 - [x] UI design contract for connection list, form, and production warning.
+- [x] Backend/UI command contract.
 - [ ] UI implementation, including production indicator.
 
 ## Milestone 2 — Schema Exploration
