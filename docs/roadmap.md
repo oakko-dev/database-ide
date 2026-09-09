@@ -18,8 +18,12 @@
 - [x] Tauri desktop shell scaffold.
 - [x] Tauri commands wired to the connection service.
 - [x] Credential and PostgreSQL input hardening.
-- [ ] UI implementation, including production indicator.
+- [x] UI implementation, including production indicator.
 
 ## Milestone 2 — Schema Exploration
 
-- [ ] Not started. Do not implement as part of Milestone 1.
+- [x] Define typed schema metadata models.
+- [x] Add read-only schema, relation, and relation-details queries.
+- [x] Expose schema exploration through Tauri commands.
+- [ ] Add schema browser UI.
+- [ ] Add PostgreSQL integration coverage against a disposable database.

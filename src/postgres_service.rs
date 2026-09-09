@@ -1,4 +1,4 @@
-use postgres::{Config, NoTls};
+use postgres::{Client, Config, NoTls};
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -86,6 +86,15 @@ impl<C: CredentialStore, R: ConnectionRepository> ConnectionService<C, R> {
         if metadata.read_only { config.options("-c default_transaction_read_only=on"); }
         let _client = config.connect(NoTls).map_err(|e| AppError::Database(e.to_string()))?;
         Ok(())
+    }
+    pub fn with_client<T>(&self, id: ConnectionId, operation: impl FnOnce(&mut Client) -> Result<T, AppError>) -> Result<T, AppError> {
+        let metadata = self.repository.get(id)?;
+        let password = self.credentials.get_password(&id.to_string())?;
+        let mut config = Config::new();
+        config.host(&metadata.host).port(metadata.port).dbname(&metadata.database).user(&metadata.username).password(password);
+        if metadata.read_only { config.options("-c default_transaction_read_only=on"); }
+        let mut client = config.connect(NoTls).map_err(|e| AppError::Database(format!("database connection failed: {e}")))?;
+        operation(&mut client)
     }
     fn metadata(id: ConnectionId, input: &ConnectionInput) -> SavedConnection { SavedConnection { id, name: input.name.clone(), host: input.host.clone(), port: input.port, database: input.database.clone(), username: input.username.clone(), environment: input.environment.clone(), read_only: input.read_only } }
 }

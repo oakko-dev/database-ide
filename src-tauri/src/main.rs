@@ -6,6 +6,7 @@ use database_ide::{
     connections::{ConnectionId, ConnectionInput, SavedConnection},
     credentials::OsCredentialStore,
     postgres_service::{ConnectionService, FileConnectionRepository},
+    schema::{self, RelationDetails, RelationInfo, SchemaInfo},
     AppError,
 };
 use tauri::{AppHandle, Manager, State};
@@ -44,6 +45,21 @@ fn test_connection(service: State<'_, AppService>, id: ConnectionId) -> Result<(
     guard.test(id, &metadata).map_err(safe_error)
 }
 
+#[tauri::command]
+fn list_schemas(service: State<'_, AppService>, id: ConnectionId) -> Result<Vec<SchemaInfo>, String> {
+    service.lock().map_err(|_| "connection service is unavailable".to_string())?.with_client(id, schema::list_schemas).map_err(safe_error)
+}
+
+#[tauri::command]
+fn list_relations(service: State<'_, AppService>, id: ConnectionId, schema_name: String) -> Result<Vec<RelationInfo>, String> {
+    service.lock().map_err(|_| "connection service is unavailable".to_string())?.with_client(id, |client| schema::list_relations(client, &schema_name)).map_err(safe_error)
+}
+
+#[tauri::command]
+fn describe_relation(service: State<'_, AppService>, id: ConnectionId, schema_name: String, relation_name: String) -> Result<RelationDetails, String> {
+    service.lock().map_err(|_| "connection service is unavailable".to_string())?.with_client(id, |client| schema::describe_relation(client, &schema_name, &relation_name)).map_err(safe_error)
+}
+
 fn build_service(app: &AppHandle) -> Result<AppService, Box<dyn std::error::Error>> {
     let directory = app.path().app_data_dir()?;
     std::fs::create_dir_all(&directory)?;
@@ -54,7 +70,7 @@ fn build_service(app: &AppHandle) -> Result<AppService, Box<dyn std::error::Erro
 fn main() {
     tauri::Builder::default()
         .setup(|app| { app.manage(build_service(app.handle())?); Ok(()) })
-        .invoke_handler(tauri::generate_handler![list_connections, create_connection, update_connection, delete_connection, test_connection])
+        .invoke_handler(tauri::generate_handler![list_connections, create_connection, update_connection, delete_connection, test_connection, list_schemas, list_relations, describe_relation])
         .run(tauri::generate_context!())
         .expect("error while running Database IDE");
 }

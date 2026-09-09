@@ -9,6 +9,9 @@ The desktop bridge should expose these backend commands to the UI:
 | `connections.update` | `{ id, input }` | `SavedConnection` |
 | `connections.delete` | `{ id }` | `void` |
 | `connections.test` | `{ id }` | `{ success: true }` or safe error |
+| `schema.list` | `{ id }` | `SchemaInfo[]` |
+| `schema.relations` | `{ id, schema_name }` | `RelationInfo[]` |
+| `schema.describe` | `{ id, schema_name, relation_name }` | `RelationDetails` |
 
 `ConnectionInput.password` is accepted only for create/update and is forwarded directly to the Rust service. It must not be returned in any result, stored by the UI, written to logs, or serialized into metadata files.
 
