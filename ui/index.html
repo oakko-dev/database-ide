@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Database IDE · Connections</title>
   <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./schema.css">
 </head>
 <body>
   <main class="shell">
@@ -20,6 +21,11 @@
           <div class="form-grid"><label>Name<input name="name" required autocomplete="off"></label><label>Environment<select name="environment"><option>LOCAL</option><option>UAT</option><option>PRODUCTION</option></select></label><label>Host<input name="host" required autocomplete="off"></label><label>Port<input name="port" type="number" min="1" max="65535" value="5432" required></label><label>Database<input name="database" required autocomplete="off"></label><label>Username<input name="username" required autocomplete="username"></label><label class="wide">Password<input name="password" type="password" autocomplete="new-password"><small>Stored securely by the backend. It is never saved in this UI.</small></label><label class="toggle wide"><input name="read_only" type="checkbox"><span>Open as read-only</span></label></div>
           <div class="form-actions"><button type="button" id="delete-connection" class="danger" hidden>Delete</button><span></span><button type="button" id="test-connection" class="secondary">Test connection</button><button class="primary" type="submit">Save connection</button></div>
         </form>
+        <section id="schema-browser" class="schema-browser" hidden aria-label="Schema explorer">
+          <div class="browser-heading"><div><p class="eyebrow">SCHEMA EXPLORER</p><h2>Database structure</h2></div><button class="secondary" id="refresh-schema">Refresh</button></div>
+          <div id="schema-status" class="browser-status" role="status"></div>
+          <div class="browser-grid"><nav id="schema-tree" class="schema-tree" aria-label="Schemas and relations"></nav><section id="relation-details" class="relation-details" aria-live="polite"><p class="browser-placeholder">Select a table or view to inspect its columns, indexes, and constraints.</p></section></div>
+        </section>
       </section>
     </section>
   </main>

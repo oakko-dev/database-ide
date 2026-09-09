@@ -8,4 +8,7 @@ export const bridge = {
   async update(id, input) { if (nativeInvoke) return nativeInvoke('update_connection', { request: { id, input } }); const item = memory.find((entry) => entry.id === id); Object.assign(item, input); delete item.password; return item; },
   async remove(id) { if (nativeInvoke) return nativeInvoke('delete_connection', { id }); const index = memory.findIndex((entry) => entry.id === id); if (index >= 0) memory.splice(index, 1); },
   async test(id) { if (nativeInvoke) return nativeInvoke('test_connection', { id }); return { success: true }; },
+  async listSchemas(id) { if (nativeInvoke) return nativeInvoke('list_schemas', { id }); return []; },
+  async listRelations(id, schemaName) { if (nativeInvoke) return nativeInvoke('list_relations', { id, schemaName }); return []; },
+  async describeRelation(id, schemaName, relationName) { if (nativeInvoke) return nativeInvoke('describe_relation', { id, schemaName, relationName }); return null; },
 };

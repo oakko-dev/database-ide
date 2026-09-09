@@ -25,5 +25,5 @@
 - [x] Define typed schema metadata models.
 - [x] Add read-only schema, relation, and relation-details queries.
 - [x] Expose schema exploration through Tauri commands.
-- [ ] Add schema browser UI.
-- [ ] Add PostgreSQL integration coverage against a disposable database.
+- [x] Add schema browser UI.
+- [x] Add PostgreSQL integration coverage against a disposable database.
