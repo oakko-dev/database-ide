@@ -29,7 +29,7 @@ async function loadRelations(schemaName) {
   const relationButtons = document.querySelectorAll('.relation-node'); relationButtons.forEach((button) => { button.hidden = true; });
   try {
     const relations = await bridge.listRelations(selectedId, schemaName);
-    document.querySelectorAll(`[data-schema-group]`).forEach((group) => { if (group.dataset.schemaGroup === schemaName) group.remove(); });
+    document.querySelectorAll('[data-schema-group]').forEach((group) => group.remove());
     const schemaButton = document.querySelector(`[data-schema="${CSS.escape(schemaName)}"]`);
     const group = document.createElement('div'); group.dataset.schemaGroup = schemaName;
     group.innerHTML = relations.length ? relations.map((relation) => `<button class="relation-node" data-relation="${escapeHtml(relation.name)}" title="${escapeHtml(relation.relation_type)}">${escapeHtml(relation.name)}</button>`).join('') : '<p class="browser-placeholder">No tables or views.</p>';

@@ -1,4 +1,4 @@
-use database_ide::schema::{describe_relation, list_relations, list_schemas};
+use database_ide::{schema::{describe_relation, list_relations, list_schemas}, AppError};
 use postgres::{Client, NoTls};
 use std::env;
 
@@ -16,4 +16,5 @@ fn explores_schemas_relations_and_details() {
     assert!(details.columns.iter().any(|column| column.name == "email" && !column.nullable));
     assert!(details.indexes.iter().any(|index| index.name == "customers_email_idx"));
     assert!(details.constraints.iter().any(|constraint| constraint.constraint_type == "PRIMARY KEY"));
+    assert!(matches!(describe_relation(&mut client, "ide_schema_test", "missing"), Err(AppError::NotFound)));
 }
