@@ -1,23 +1,51 @@
 use postgres::{Client, NoTls};
+use std::collections::HashMap;
+use std::sync::Mutex;
 
 use crate::{connections::{ConnectionId, ConnectionInput, SavedConnection}, credentials::CredentialStore, error::AppError};
 
-pub struct ConnectionService<C: CredentialStore> { pub credentials: C }
+pub struct ConnectionService<C: CredentialStore, R: ConnectionRepository = InMemoryConnectionRepository> { pub credentials: C, pub repository: R }
 
-impl<C: CredentialStore> ConnectionService<C> {
-    pub fn new(credentials: C) -> Self { Self { credentials } }
+pub trait ConnectionRepository {
+    fn save(&self, connection: SavedConnection) -> Result<(), AppError>;
+    fn get(&self, id: ConnectionId) -> Result<SavedConnection, AppError>;
+    fn list(&self) -> Vec<SavedConnection>;
+    fn delete(&self, id: ConnectionId) -> Result<(), AppError>;
+}
+
+#[derive(Default)]
+pub struct InMemoryConnectionRepository(Mutex<HashMap<ConnectionId, SavedConnection>>);
+
+impl ConnectionRepository for InMemoryConnectionRepository {
+    fn save(&self, connection: SavedConnection) -> Result<(), AppError> { self.0.lock().unwrap().insert(connection.id, connection); Ok(()) }
+    fn get(&self, id: ConnectionId) -> Result<SavedConnection, AppError> { self.0.lock().unwrap().get(&id).cloned().ok_or(AppError::NotFound) }
+    fn list(&self) -> Vec<SavedConnection> { self.0.lock().unwrap().values().cloned().collect() }
+    fn delete(&self, id: ConnectionId) -> Result<(), AppError> { self.0.lock().unwrap().remove(&id).map(|_| ()).ok_or(AppError::NotFound) }
+}
+
+impl<C: CredentialStore> ConnectionService<C, InMemoryConnectionRepository> {
+    pub fn new(credentials: C) -> Self { Self { credentials, repository: InMemoryConnectionRepository::default() } }
+}
+
+impl<C: CredentialStore, R: ConnectionRepository> ConnectionService<C, R> {
     pub fn create(&self, input: ConnectionInput) -> Result<SavedConnection, AppError> {
         input.validate()?;
         let id = ConnectionId::new_v4();
         self.credentials.set_password(&id.to_string(), &input.password)?;
-        Ok(Self::metadata(id, &input))
+        let metadata = Self::metadata(id, &input);
+        self.repository.save(metadata.clone())?;
+        Ok(metadata)
     }
     pub fn update(&self, id: ConnectionId, input: ConnectionInput) -> Result<SavedConnection, AppError> {
         input.validate()?;
         self.credentials.set_password(&id.to_string(), &input.password)?;
-        Ok(Self::metadata(id, &input))
+        let metadata = Self::metadata(id, &input);
+        self.repository.save(metadata.clone())?;
+        Ok(metadata)
     }
-    pub fn delete(&self, id: ConnectionId) -> Result<(), AppError> { self.credentials.delete_password(&id.to_string()) }
+    pub fn list(&self) -> Vec<SavedConnection> { self.repository.list() }
+    pub fn get(&self, id: ConnectionId) -> Result<SavedConnection, AppError> { self.repository.get(id) }
+    pub fn delete(&self, id: ConnectionId) -> Result<(), AppError> { self.repository.delete(id)?; self.credentials.delete_password(&id.to_string()) }
     pub fn test(&self, id: ConnectionId, metadata: &SavedConnection) -> Result<(), AppError> {
         let password = self.credentials.get_password(&id.to_string())?;
         let config = format!("host={} port={} dbname={} user={} password={}", metadata.host, metadata.port, metadata.database, metadata.username, password);
