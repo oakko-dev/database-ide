@@ -16,6 +16,7 @@
 - [x] UI design contract for connection list, form, and production warning.
 - [x] Backend/UI command contract.
 - [x] Tauri desktop shell scaffold.
+- [x] Tauri commands wired to the connection service.
 - [ ] UI implementation, including production indicator.
 
 ## Milestone 2 — Schema Exploration

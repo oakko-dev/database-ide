@@ -56,6 +56,10 @@ impl<C: CredentialStore> ConnectionService<C, InMemoryConnectionRepository> {
 }
 
 impl<C: CredentialStore, R: ConnectionRepository> ConnectionService<C, R> {
+    pub fn with_repository(credentials: C, repository: R) -> Self { Self { credentials, repository } }
+}
+
+impl<C: CredentialStore, R: ConnectionRepository> ConnectionService<C, R> {
     pub fn create(&self, input: ConnectionInput) -> Result<SavedConnection, AppError> {
         input.validate()?;
         let id = ConnectionId::new_v4();

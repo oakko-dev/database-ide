@@ -14,4 +14,4 @@ The desktop bridge should expose these backend commands to the UI:
 
 The bridge owns error translation. Errors should preserve actionable categories such as validation, credential storage, not found, and database connection failure while redacting connection strings and credentials.
 
-The browser prototype in `ui/` intentionally does not implement this bridge yet. A desktop adapter should replace its in-memory actions without changing the layout or production-warning behavior.
+The Tauri shell now exposes these commands from `src-tauri/src/main.rs`. The browser prototype in `ui/` still uses an in-memory fallback when opened directly; the next UI wiring pass should call the Tauri bridge when running as a desktop app.
