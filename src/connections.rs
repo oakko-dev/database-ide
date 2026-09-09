@@ -42,4 +42,10 @@ impl ConnectionInput {
         if self.port == 0 { return Err(AppError::InvalidPort); }
         Ok(())
     }
+
+    pub fn validate_for_create(&self) -> Result<(), AppError> {
+        self.validate()?;
+        if self.password.is_empty() { return Err(AppError::EmptyPassword); }
+        Ok(())
+    }
 }

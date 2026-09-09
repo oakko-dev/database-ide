@@ -1,4 +1,4 @@
-use postgres::{Client, NoTls};
+use postgres::{Config, NoTls};
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -61,7 +61,7 @@ impl<C: CredentialStore, R: ConnectionRepository> ConnectionService<C, R> {
 
 impl<C: CredentialStore, R: ConnectionRepository> ConnectionService<C, R> {
     pub fn create(&self, input: ConnectionInput) -> Result<SavedConnection, AppError> {
-        input.validate()?;
+        input.validate_for_create()?;
         let id = ConnectionId::new_v4();
         self.credentials.set_password(&id.to_string(), &input.password)?;
         let metadata = Self::metadata(id, &input);
@@ -70,6 +70,7 @@ impl<C: CredentialStore, R: ConnectionRepository> ConnectionService<C, R> {
     }
     pub fn update(&self, id: ConnectionId, input: ConnectionInput) -> Result<SavedConnection, AppError> {
         input.validate()?;
+        self.repository.get(id)?;
         if !input.password.is_empty() { self.credentials.set_password(&id.to_string(), &input.password)?; }
         let metadata = Self::metadata(id, &input);
         self.repository.save(metadata.clone())?;
@@ -80,12 +81,13 @@ impl<C: CredentialStore, R: ConnectionRepository> ConnectionService<C, R> {
     pub fn delete(&self, id: ConnectionId) -> Result<(), AppError> { self.repository.delete(id)?; self.credentials.delete_password(&id.to_string()) }
     pub fn test(&self, id: ConnectionId, metadata: &SavedConnection) -> Result<(), AppError> {
         let password = self.credentials.get_password(&id.to_string())?;
-        let config = format!("host={} port={} dbname={} user={} password={}", metadata.host, metadata.port, metadata.database, metadata.username, password);
-        let _client = Client::connect(&config, NoTls).map_err(|e| AppError::Database(Self::safe_db_error(&e.to_string())))?;
+        let mut config = Config::new();
+        config.host(&metadata.host).port(metadata.port).dbname(&metadata.database).user(&metadata.username).password(password);
+        if metadata.read_only { config.options("-c default_transaction_read_only=on"); }
+        let _client = config.connect(NoTls).map_err(|e| AppError::Database(e.to_string()))?;
         Ok(())
     }
     fn metadata(id: ConnectionId, input: &ConnectionInput) -> SavedConnection { SavedConnection { id, name: input.name.clone(), host: input.host.clone(), port: input.port, database: input.database.clone(), username: input.username.clone(), environment: input.environment.clone(), read_only: input.read_only } }
-    fn safe_db_error(message: &str) -> String { message.replace("password=", "password=[redacted]") }
 }
 
 #[cfg(test)]
@@ -104,7 +106,11 @@ mod tests {
     #[test]
     fn invalid_input_is_rejected() { let (fake, _) = fake(); let service = ConnectionService::new(fake); let mut invalid = input("secret"); invalid.name.clear(); let result = service.create(invalid); assert!(matches!(result, Err(AppError::EmptyName))); }
     #[test]
+    fn create_requires_a_password() { let (fake, _) = fake(); let service = ConnectionService::new(fake); let result = service.create(input("")); assert!(matches!(result, Err(AppError::EmptyPassword))); }
+    #[test]
     fn update_without_password_preserves_existing_credential() { let (fake, passwords) = fake(); let service = ConnectionService::new(fake); let saved = service.create(input("secret")).unwrap(); let mut edited = input(""); edited.name = "Renamed".into(); service.update(saved.id, edited).unwrap(); assert_eq!(passwords.lock().unwrap().get(&saved.id.to_string()), Some(&"secret".to_string())); }
     #[test]
     fn file_repository_persists_metadata_without_password() { let directory = tempdir().unwrap(); let path = directory.path().join("connections.json"); let (fake, _) = fake(); let service = ConnectionService::with_repository(fake, FileConnectionRepository::open(&path).unwrap()); service.create(input("secret")).unwrap(); let contents = std::fs::read_to_string(&path).unwrap(); assert!(!contents.contains("secret")); assert_eq!(FileConnectionRepository::open(&path).unwrap().list().len(), 1); }
+    #[test]
+    fn update_requires_an_existing_connection() { let (fake, _) = fake(); let service = ConnectionService::new(fake); let result = service.update(ConnectionId::new_v4(), input("secret")); assert!(matches!(result, Err(AppError::NotFound))); }
 }

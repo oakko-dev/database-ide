@@ -10,6 +10,8 @@ pub enum AppError {
     EmptyDatabase,
     #[error("username must not be empty")]
     EmptyUsername,
+    #[error("password must not be empty when creating a connection")]
+    EmptyPassword,
     #[error("port must be between 1 and 65535")]
     InvalidPort,
     #[error("saved connection was not found")]

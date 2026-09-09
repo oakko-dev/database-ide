@@ -17,6 +17,7 @@
 - [x] Backend/UI command contract.
 - [x] Tauri desktop shell scaffold.
 - [x] Tauri commands wired to the connection service.
+- [x] Credential and PostgreSQL input hardening.
 - [ ] UI implementation, including production indicator.
 
 ## Milestone 2 — Schema Exploration
