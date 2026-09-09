@@ -6,4 +6,4 @@ The UI owns presentation and user interaction only. The backend owns connection 
 
 Saved connection metadata is non-secret configuration. Passwords are stored under the OS credential manager using a stable per-connection service/account key. On macOS this is Keychain; supported OSes may use their native credential store through the `keyring` crate.
 
-The service uses a repository abstraction for metadata persistence. Milestone 1 includes an in-memory repository as a safe default; a desktop adapter can replace it without changing the UI or credential boundary. The UI can consume `SavedConnection` and render `PRODUCTION` connections with a visually distinct warning treatment.
+The service uses a repository abstraction for metadata persistence. Milestone 1 includes an in-memory repository for tests and a file-backed repository for durable non-secret metadata; neither repository stores passwords. The UI can consume `SavedConnection` and render `PRODUCTION` connections with a visually distinct warning treatment.

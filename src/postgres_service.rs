@@ -1,5 +1,7 @@
 use postgres::{Client, NoTls};
 use std::collections::HashMap;
+use std::fs;
+use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
 use crate::{connections::{ConnectionId, ConnectionInput, SavedConnection}, credentials::CredentialStore, error::AppError};
@@ -21,6 +23,32 @@ impl ConnectionRepository for InMemoryConnectionRepository {
     fn get(&self, id: ConnectionId) -> Result<SavedConnection, AppError> { self.0.lock().unwrap().get(&id).cloned().ok_or(AppError::NotFound) }
     fn list(&self) -> Vec<SavedConnection> { self.0.lock().unwrap().values().cloned().collect() }
     fn delete(&self, id: ConnectionId) -> Result<(), AppError> { self.0.lock().unwrap().remove(&id).map(|_| ()).ok_or(AppError::NotFound) }
+}
+
+pub struct FileConnectionRepository { path: PathBuf, state: Mutex<HashMap<ConnectionId, SavedConnection>> }
+
+impl FileConnectionRepository {
+    pub fn open(path: impl AsRef<Path>) -> Result<Self, AppError> {
+        let path = path.as_ref().to_path_buf();
+        let state = if path.exists() {
+            let contents = fs::read_to_string(&path).map_err(|e| AppError::Database(format!("could not read saved connections: {e}")))?;
+            serde_json::from_str(&contents).map_err(|e| AppError::Database(format!("could not read saved connections: {e}")))?
+        } else { HashMap::new() };
+        Ok(Self { path, state: Mutex::new(state) })
+    }
+
+    fn flush(&self) -> Result<(), AppError> {
+        let state = self.state.lock().unwrap();
+        let contents = serde_json::to_string_pretty(&*state).map_err(|e| AppError::Database(format!("could not save connections: {e}")))?;
+        fs::write(&self.path, contents).map_err(|e| AppError::Database(format!("could not save connections: {e}")))
+    }
+}
+
+impl ConnectionRepository for FileConnectionRepository {
+    fn save(&self, connection: SavedConnection) -> Result<(), AppError> { self.state.lock().unwrap().insert(connection.id, connection); self.flush() }
+    fn get(&self, id: ConnectionId) -> Result<SavedConnection, AppError> { self.state.lock().unwrap().get(&id).cloned().ok_or(AppError::NotFound) }
+    fn list(&self) -> Vec<SavedConnection> { self.state.lock().unwrap().values().cloned().collect() }
+    fn delete(&self, id: ConnectionId) -> Result<(), AppError> { self.state.lock().unwrap().remove(&id).map(|_| ()).ok_or(AppError::NotFound).and_then(|_| self.flush()) }
 }
 
 impl<C: CredentialStore> ConnectionService<C, InMemoryConnectionRepository> {
