@@ -53,7 +53,7 @@ fn build_service(app: &AppHandle) -> Result<AppService, Box<dyn std::error::Erro
 
 fn main() {
     tauri::Builder::default()
-        .setup(|app| { app.manage(build_service(app)?); Ok(()) })
+        .setup(|app| { app.manage(build_service(app.handle())?); Ok(()) })
         .invoke_handler(tauri::generate_handler![list_connections, create_connection, update_connection, delete_connection, test_connection])
         .run(tauri::generate_context!())
         .expect("error while running Database IDE");
