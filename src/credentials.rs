@@ -21,12 +21,18 @@ impl OsCredentialStore {
 
 impl CredentialStore for OsCredentialStore {
     fn set_password(&self, account: &str, password: &str) -> Result<(), AppError> {
-        Self::entry(account)?.set_password(password).map_err(|e| AppError::CredentialStorage(e.to_string()))
+        Self::entry(account)?
+            .set_password(password)
+            .map_err(|e| AppError::CredentialStorage(e.to_string()))
     }
     fn get_password(&self, account: &str) -> Result<String, AppError> {
-        Self::entry(account)?.get_password().map_err(|e| AppError::CredentialStorage(e.to_string()))
+        Self::entry(account)?
+            .get_password()
+            .map_err(|e| AppError::CredentialStorage(e.to_string()))
     }
     fn delete_password(&self, account: &str) -> Result<(), AppError> {
-        Self::entry(account)?.delete_credential().map_err(|e| AppError::CredentialStorage(e.to_string()))
+        Self::entry(account)?
+            .delete_credential()
+            .map_err(|e| AppError::CredentialStorage(e.to_string()))
     }
 }
