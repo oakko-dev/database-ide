@@ -13,6 +13,7 @@
 - [x] Environment metadata and read-only mode.
 - [x] Safe error messages and no password logging.
 - [x] Durable non-secret connection metadata storage.
+- [x] UI design contract for connection list, form, and production warning.
 - [ ] UI implementation, including production indicator.
 
 ## Milestone 2 — Schema Exploration
