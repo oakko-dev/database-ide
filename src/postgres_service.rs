@@ -70,7 +70,7 @@ impl<C: CredentialStore, R: ConnectionRepository> ConnectionService<C, R> {
     }
     pub fn update(&self, id: ConnectionId, input: ConnectionInput) -> Result<SavedConnection, AppError> {
         input.validate()?;
-        self.credentials.set_password(&id.to_string(), &input.password)?;
+        if !input.password.is_empty() { self.credentials.set_password(&id.to_string(), &input.password)?; }
         let metadata = Self::metadata(id, &input);
         self.repository.save(metadata.clone())?;
         Ok(metadata)
