@@ -92,12 +92,19 @@ impl<C: CredentialStore, R: ConnectionRepository> ConnectionService<C, R> {
 mod tests {
     use super::*;
     use std::collections::HashMap;
-    use std::sync::Mutex;
+    use std::sync::{Arc, Mutex};
+    use tempfile::tempdir;
     use crate::connections::ConnectionEnvironment;
-    struct Fake(Mutex<HashMap<String, String>>);
+    struct Fake(Arc<Mutex<HashMap<String, String>>>);
     impl CredentialStore for Fake { fn set_password(&self, a: &str, p: &str) -> Result<(), AppError> { self.0.lock().unwrap().insert(a.into(), p.into()); Ok(()) } fn get_password(&self, a: &str) -> Result<String, AppError> { Ok(self.0.lock().unwrap().get(a).cloned().unwrap_or_default()) } fn delete_password(&self, a: &str) -> Result<(), AppError> { self.0.lock().unwrap().remove(a); Ok(()) } }
+    fn fake() -> (Fake, Arc<Mutex<HashMap<String, String>>>) { let passwords = Arc::new(Mutex::new(HashMap::new())); (Fake(passwords.clone()), passwords) }
+    fn input(password: &str) -> ConnectionInput { ConnectionInput { name: "Local".into(), host: "localhost".into(), port: 5432, database: "app".into(), username: "dev".into(), password: password.into(), environment: ConnectionEnvironment::Local, read_only: false } }
     #[test]
-    fn create_stores_only_metadata_in_return_value() { let service = ConnectionService::new(Fake(Mutex::new(HashMap::new()))); let result = service.create(ConnectionInput { name: "Local".into(), host: "localhost".into(), port: 5432, database: "app".into(), username: "dev".into(), password: "secret".into(), environment: ConnectionEnvironment::Local, read_only: false }).unwrap(); assert_eq!(result.name, "Local"); }
+    fn create_stores_only_metadata_in_return_value() { let (fake, passwords) = fake(); let service = ConnectionService::new(fake); let result = service.create(input("secret")).unwrap(); assert_eq!(result.name, "Local"); assert!(!serde_json::to_string(&result).unwrap().contains("secret")); assert_eq!(passwords.lock().unwrap().len(), 1); }
     #[test]
-    fn invalid_input_is_rejected() { let service = ConnectionService::new(Fake(Mutex::new(HashMap::new()))); let result = service.create(ConnectionInput { name: "".into(), host: "localhost".into(), port: 5432, database: "app".into(), username: "dev".into(), password: "secret".into(), environment: ConnectionEnvironment::Local, read_only: false }); assert!(matches!(result, Err(AppError::EmptyName))); }
+    fn invalid_input_is_rejected() { let (fake, _) = fake(); let service = ConnectionService::new(fake); let mut invalid = input("secret"); invalid.name.clear(); let result = service.create(invalid); assert!(matches!(result, Err(AppError::EmptyName))); }
+    #[test]
+    fn update_without_password_preserves_existing_credential() { let (fake, passwords) = fake(); let service = ConnectionService::new(fake); let saved = service.create(input("secret")).unwrap(); let mut edited = input(""); edited.name = "Renamed".into(); service.update(saved.id, edited).unwrap(); assert_eq!(passwords.lock().unwrap().get(&saved.id.to_string()), Some(&"secret".to_string())); }
+    #[test]
+    fn file_repository_persists_metadata_without_password() { let directory = tempdir().unwrap(); let path = directory.path().join("connections.json"); let (fake, _) = fake(); let service = ConnectionService::with_repository(fake, FileConnectionRepository::open(&path).unwrap()); service.create(input("secret")).unwrap(); let contents = std::fs::read_to_string(&path).unwrap(); assert!(!contents.contains("secret")); assert_eq!(FileConnectionRepository::open(&path).unwrap().list().len(), 1); }
 }
