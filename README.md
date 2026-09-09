@@ -13,4 +13,6 @@ cargo test
 cargo check
 ```
 
+The desktop shell uses Tauri 2. After installing Node.js and Rust, run `npm install` followed by `npm run tauri dev`.
+
 The current milestone is intentionally backend-only. The future UI must use `SavedConnection.environment` to render production connections with a distinct warning indicator and must not connect to PostgreSQL directly.
